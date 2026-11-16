@@ -1,0 +1,4 @@
+model,baseline CV F1,tuned CV F1,best params
+SVM (RBF),0.9609865990024022,0.9760092643674734,"{'C': 3, 'class_weight': 'balanced', 'gamma': 0.01}"
+Logistic Regression,0.9640480895915677,0.9672401767030923,"{'C': 0.3, 'class_weight': 'balanced', 'penalty': 'l2'}"
+Random Forest,0.9519447457150247,0.9557201007947278,"{'class_weight': None, 'max_depth': 10, 'max_features': 'log2', 'min_samples_leaf': 1, 'n_estimators': 200}"

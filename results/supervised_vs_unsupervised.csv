@@ -1,0 +1,4 @@
+,accuracy,recall (malignant),precision (malignant),missed cancers
+"Unsupervised: K-Means, no labels (all 569)",0.9104,0.8255,0.9259,37 of 212
+"Unsupervised: Ward, no labels (all 569)",0.9086,0.8868,0.8704,24 of 212
+Supervised: SVM (RBF) @ threshold 0.34 (114 test patients),0.9825,0.9762,0.9762,1 of 42

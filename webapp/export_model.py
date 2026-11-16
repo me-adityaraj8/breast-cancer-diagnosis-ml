@@ -72,7 +72,12 @@ points = [[round(float(a), 3), round(float(b), 3), int(t), majority[int(c)]]
 patients = [{"id": i + 1, "actual": int(r["target"]), "values": [float(r[f]) for f in features]}
             for i, (_, r) in enumerate(test.iterrows())]
 ranges = [{"min": float(df[f].min()), "max": float(df[f].max())} for f in features]
-(WEB / "data.json").write_text(json.dumps({"features": features, "ranges": ranges, "points": points, "patients": patients}))
+means = {"benign": [float(v) for v in df.loc[df["target"] == 0, features].mean()],
+         "malignant": [float(v) for v in df.loc[df["target"] == 1, features].mean()]}
+centroids = [{"x": round(float(c[0]), 3), "y": round(float(c[1]), 3), "malignant_like": bool(majority[i])}
+             for i, c in enumerate(km.cluster_centers_)]
+(WEB / "data.json").write_text(json.dumps({"features": features, "ranges": ranges, "means": means,
+                                           "centroids": centroids, "points": points, "patients": patients}))
 
 # ---------- Check: the pure-Python backend must match scikit-learn ----------
 sys.path.insert(0, str(WEB / "api"))

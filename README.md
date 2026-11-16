@@ -5,7 +5,7 @@ Machine Learning Lab small project. One medical dataset, two programs:
 1. **Supervised:** learn the diagnosis from labelled patients and test it on patients the model has never seen.
 2. **Unsupervised:** hide the labels and check whether the data splits into benign and malignant groups on its own.
 
-**Live demo:** https://breast-cancer-diagnosis-ml-lovat.vercel.app
+**Live demo:** https://tumour-ml.vercel.app
 
 Pick one of the 114 test patients or move the measurements, and the page shows the SVM's prediction and the
 K-Means group for that patient. Test patients 17 and 19 are the two the model gets wrong.

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benign or malignant? Breast tumour diagnosis demo</title>
+<meta name="description" content="Interactive demo of a tuned SVM and K-Means clustering on the Breast Cancer Wisconsin dataset.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500..800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #12172B; --ink2: #1C2340; --paper: #FBF7F0; --paper2: #F1E9DB; --line: #E3D9C8;
+  --muted: #555B6E; --coral: #C8364A; --coral-soft: #FBE1E3; --coral-light: #FF9AA5;
+  --green: #2F7D55; --green-soft: #DDF0E4; --green-light: #8FD9AE; --card: #FFFDF9;
+  --display: 'Bricolage Grotesque', system-ui, sans-serif; --body: 'DM Sans', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; border-radius: 6px; }
+
+.hero { background: linear-gradient(135deg, #12172B 0%, #2D1B3E 100%); color: var(--paper); }
+.hero-in { max-width: 1160px; margin: 0 auto; padding: 40px 20px 44px; display: flex; gap: 32px; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral-light); }
+.hero h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.02; margin: 10px 0 14px; }
+.hero p.lede { color: #BBC2D6; max-width: 56ch; font-size: 17px; }
+.hero svg { flex: none; width: 190px; height: 190px; }
+.hero-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.chip-link { display: inline-block; padding: 8px 16px; border-radius: 999px; border: 1.5px solid #3A4570; text-decoration: none; font-weight: 600; font-size: 14px; }
+.chip-link:hover { background: #232B4C; }
+
+main { max-width: 1160px; margin: 0 auto; padding: 28px 20px 56px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px; align-items: start; }
+.card { background: var(--card); border: 1.5px solid var(--line); border-radius: 20px; padding: 22px; box-shadow: 0 10px 28px rgba(18, 23, 43, 0.06); }
+.card + .card { margin-top: 20px; }
+.card h2 { font-size: 22px; margin-bottom: 4px; }
+.sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+.step { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 700; margin-right: 8px; vertical-align: 3px; font-family: var(--body); letter-spacing: 0; }
+
+.picker { display: flex; gap: 10px; }
+.picker select { flex: 1; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; }
+.btn { padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--ink2); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { background: var(--paper2); }
+
+.slider { margin-top: 16px; }
+.slider-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
+.slider-top label { font-weight: 600; }
+.slider-top output { font-variant-numeric: tabular-nums; color: var(--muted); }
+input[type=range] { width: 100%; accent-color: var(--coral); margin: 6px 0 0; }
+.hint { font-size: 13px; color: var(--muted); }
+details { margin-top: 18px; border-top: 1.5px solid var(--line); padding-top: 14px; }
+summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.all-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.all-grid label { display: block; font-size: 12px; color: var(--muted); }
+.all-grid input { width: 100%; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; font-variant-numeric: tabular-nums; font-size: 14px; }
+
+.verdict { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 16px; background: var(--green-soft); transition: background 0.25s; }
+.verdict.mal { background: var(--coral-soft); }
+.verdict .dot { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--green); transition: background 0.25s, border-radius 0.25s; }
+.verdict.mal .dot { background: var(--coral); border-radius: 46% 54% 40% 60% / 58% 42% 62% 38%; }
+.verdict .word { font-family: var(--display); font-size: 34px; font-weight: 700; line-height: 1; color: var(--green); letter-spacing: -0.02em; }
+.verdict.mal .word { color: var(--coral); }
+.verdict .pct { font-size: 15px; color: var(--ink); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+.meter { position: relative; height: 18px; border-radius: 9px; background: var(--paper2); margin: 26px 0 30px; }
+.meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 9px; background: var(--green); width: 0; transition: width 0.3s, background 0.25s; min-width: 4px; }
+.meter.mal .fill { background: var(--coral); }
+.meter .tick { position: absolute; top: -7px; bottom: -7px; width: 3px; background: var(--ink); border-radius: 2px; }
+.meter .tick span { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.meter .scale { position: absolute; top: 24px; left: 0; right: 0; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fact { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.fact .k { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.fact .v { font-weight: 600; margin-top: 2px; }
+.badge { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.badge.ok { background: var(--green-soft); color: var(--green); }
+.badge.bad { background: var(--coral-soft); color: var(--coral); }
+.status { min-height: 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.status.err { color: var(--coral); font-weight: 600; }
+
+.map-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.toggle { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+.toggle button { border: 0; background: transparent; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.toggle button[aria-pressed=true] { background: var(--ink); color: var(--paper); }
+#map { width: 100%; height: auto; display: block; margin-top: 10px; border-radius: 14px; background: #fff; border: 1.5px solid var(--line); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+.how { max-width: 1160px; margin: 0 auto; padding: 0 20px 40px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.how .card { margin: 0; }
+.how h3 { font-size: 18px; margin-bottom: 6px; }
+.how p { font-size: 14px; color: var(--muted); }
+footer { border-top: 1.5px solid var(--line); padding: 22px 20px 36px; text-align: center; font-size: 13px; color: var(--muted); }
+footer strong { color: var(--ink); }
+
+@media (max-width: 860px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .how { grid-template-columns: minmax(0, 1fr); }
+  .hero svg { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <div>
+      <p class="eyebrow">Machine Learning Lab · Live demo</p>
+      <h1>Benign or malignant?</h1>
+      <p class="lede">Pick a patient or move the measurements. A tuned SVM predicts the diagnosis, and K-Means shows which group the patient falls into without ever seeing a label.</p>
+      <div class="hero-links">
+        <a class="chip-link" href="https://github.com/me-adityaraj8/breast-cancer-diagnosis-ml">Code and notebooks on GitHub</a>
+      </div>
+    </div>
+    <svg viewBox="0 0 620 620" role="img" aria-label="Microscope view: small round benign cells and large irregular malignant cells">
+      <defs><path id="blob" d="M0,-100 C40,-110 70,-70 95,-60 C120,-45 85,-10 100,20 C115,55 70,60 55,90 C40,120 5,90 -25,100 C-60,112 -70,70 -95,50 C-120,30 -85,0 -100,-30 C-112,-65 -65,-70 -45,-92 C-30,-112 -15,-95 0,-100 Z"/></defs>
+      <circle cx="310" cy="310" r="300" fill="#1C2340" stroke="#3A4570" stroke-width="4"/>
+      <g fill="#8FD9AE"><circle cx="150" cy="300" r="40"/><circle cx="240" cy="400" r="36"/><circle cx="140" cy="420" r="30"/><circle cx="250" cy="270" r="34"/><circle cx="330" cy="500" r="34"/><circle cx="190" cy="190" r="28"/><circle cx="230" cy="510" r="26"/><circle cx="330" cy="330" r="30"/></g>
+      <g fill="#2F7D55"><circle cx="154" cy="296" r="14"/><circle cx="236" cy="404" r="13"/><circle cx="143" cy="417" r="11"/><circle cx="247" cy="273" r="12"/><circle cx="334" cy="497" r="12"/><circle cx="188" cy="192" r="10"/><circle cx="232" cy="508" r="9"/><circle cx="327" cy="333" r="11"/></g>
+      <use href="#blob" transform="translate(425,205) rotate(10)" fill="#FF9AA5"/><use href="#blob" transform="translate(430,200) rotate(130) scale(0.42)" fill="#C8364A"/>
+      <use href="#blob" transform="translate(470,405) rotate(80) scale(0.8)" fill="#FF9AA5"/><use href="#blob" transform="translate(466,410) rotate(200) scale(0.34)" fill="#C8364A"/>
+      <use href="#blob" transform="translate(292,112) rotate(200) scale(0.5)" fill="#FF9AA5"/><use href="#blob" transform="translate(294,110) rotate(40) scale(0.2)" fill="#C8364A"/>
+    </svg>
+  </div>
+</header>
+
+<main>
+  <section aria-label="Patient measurements">
+    <div class="card">
+      <h2><span class="step">1</span>Choose a patient</h2>
+      <p class="sub">114 real patients the model never saw during training.</p>
+      <div class="picker">
+        <select id="patient" aria-label="Test patient"></select>
+        <button class="btn" id="random" type="button">Random</button>
+      </div>
+
+      <h2 style="margin-top:26px"><span class="step">2</span>Change the measurements</h2>
+      <p class="sub">The six measurements the models rely on most. Drag one to see the prediction move.</p>
+      <div id="sliders"></div>
+      <p class="hint" id="edited" hidden style="margin-top:14px">Measurements changed: this is now a hypothetical patient. <button class="btn ghost" id="reset" type="button" style="padding:4px 12px;margin-left:6px">Reset</button></p>
+
+      <details>
+        <summary>All 30 measurements</summary>
+        <div class="all-grid" id="all"></div>
+      </details>
+    </div>
+  </section>
+
+  <section aria-label="Prediction">
+    <div class="card" aria-live="polite">
+      <h2><span class="step">3</span>Supervised: what the SVM says</h2>
+      <p class="sub">Trained on 455 labelled patients. Malignant if the probability reaches the tuned threshold.</p>
+      <div class="verdict" id="verdict">
+        <div class="dot" aria-hidden="true"></div>
+        <div><div class="word" id="word">…</div><div class="pct" id="pct">Loading the model</div></div>
+      </div>
+      <div class="meter" id="meter" role="img" aria-label="Malignant probability meter">
+        <div class="fill" id="fill"></div>
+        <div class="tick" id="tick"><span>threshold 0.34</span></div>
+        <div class="scale"><span>0%</span><span>probability of malignant</span><span>100%</span></div>
+      </div>
+      <div class="facts">
+        <div class="fact"><div class="k">Actual diagnosis</div><div class="v" id="actual">–</div></div>
+        <div class="fact"><div class="k">At the default 0.50 threshold</div><div class="v" id="default">–</div></div>
+      </div>
+      <p class="status" id="status"></p>
+    </div>
+
+    <div class="card">
+      <div class="map-top">
+        <div>
+          <h2><span class="step">4</span>Unsupervised: where the patient lands</h2>
+          <p class="sub" id="clusterline" style="margin-bottom:0">K-Means grouped all 569 patients without labels.</p>
+        </div>
+        <div class="toggle" role="group" aria-label="Colour the map by">
+          <button type="button" id="by-cluster" aria-pressed="true">K-Means groups</button>
+          <button type="button" id="by-truth" aria-pressed="false">True diagnosis</button>
+        </div>
+      </div>
+      <svg id="map" viewBox="0 0 640 400" role="img" aria-label="All 569 patients plotted on the first two principal components, with the current patient highlighted"></svg>
+      <div class="legend">
+        <span><i style="background:#4C9F70"></i><span id="lg-a">benign-like group</span></span>
+        <span><i style="background:#D1495B"></i><span id="lg-b">malignant-like group</span></span>
+        <span><i style="background:#fff;border:3px solid #12172B;width:14px;height:14px;vertical-align:-2px"></i>this patient</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="how" aria-label="How it works">
+  <div class="card"><h3>The data</h3><p>569 patients from the Breast Cancer Wisconsin dataset. Each has 30 measurements of the cell nuclei in a biopsy image, such as radius, texture and concave points.</p></div>
+  <div class="card"><h3>The supervised model</h3><p>An RBF-SVM chosen from 7 algorithms by cross-validation. On unseen patients: 98.2% accuracy, 97.6% recall, and 1 of 42 cancers missed.</p></div>
+  <div class="card"><h3>The unsupervised model</h3><p>PCA compresses 30 features to 7, then K-Means finds two groups. With no labels at all, the groups match the real diagnosis for 91% of patients.</p></div>
+</section>
+
+<footer>
+  <p><strong>K Aditya Raj Kumar Dora</strong> · <strong>Atyadik Kumar Anand</strong> · <strong>Naman Singh</strong></p>
+  <p style="margin-top:6px">A student project for learning. It is not a medical device and must not be used for diagnosis.</p>
+</footer>
+
+<script>
+const KEY = ["worst radius", "worst texture", "worst concave points", "worst area", "mean concave points", "worst smoothness"];
+const $ = id => document.getElementById(id);
+let DATA, current = [], base = null, colourBy = "cluster", lastPca = null, timer = null, seq = 0;
+
+const fmt = v => Math.abs(v) >= 100 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(4);
+const label = mal => mal ? "Malignant" : "Benign";
+
+async function init() {
+  try {
+    DATA = await (await fetch("data.json")).json();
+  } catch (e) {
+    $("status").textContent = "Could not load the patient data. Refresh the page to try again.";
+    $("status").className = "status err";
+    return;
+  }
+  const sel = $("patient");
+  DATA.patients.forEach(p => sel.add(new Option(`Test patient ${p.id}`, p.id)));
+
+  KEY.forEach(name => {
+    const i = DATA.features.indexOf(name), r = DATA.ranges[i];
+    const wrap = document.createElement("div");
+    wrap.className = "slider";
+    wrap.innerHTML = `<div class="slider-top"><label for="s${i}">${name}</label><output id="o${i}"></output></div>
+      <input type="range" id="s${i}" min="${r.min}" max="${r.max}" step="${(r.max - r.min) / 400}">`;
+    $("sliders").append(wrap);
+    wrap.querySelector("input").addEventListener("input", e => setValue(i, +e.target.value));
+  });
+  DATA.features.forEach((name, i) => {
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<label for="n${i}">${name}</label><input type="number" id="n${i}" step="any" inputmode="decimal">`;
+    $("all").append(wrap);
+    wrap.querySelector("input").addEventListener("change", e => { if (e.target.value !== "" && isFinite(+e.target.value)) setValue(i, +e.target.value); });
+  });
+
+  sel.addEventListener("change", () => load(+sel.value));
+  $("random").addEventListener("click", () => {
+    const p = DATA.patients[Math.floor(Math.random() * DATA.patients.length)];
+    sel.value = p.id; load(p.id);
+  });
+  $("reset").addEventListener("click", () => load(base.id));
+  for (const [id, mode] of [["by-cluster", "cluster"], ["by-truth", "truth"]]) {
+    $(id).addEventListener("click", () => {
+      colourBy = mode;
+      $("by-cluster").setAttribute("aria-pressed", mode === "cluster");
+      $("by-truth").setAttribute("aria-pressed", mode === "truth");
+      $("lg-a").textContent = mode === "cluster" ? "benign-like group" : "benign (true)";
+      $("lg-b").textContent = mode === "cluster" ? "malignant-like group" : "malignant (true)";
+      drawMap();
+    });
+  }
+  load(DATA.patients[0].id);
+}
+
+function load(id) {
+  base = DATA.patients.find(p => p.id === id);
+  current = base.values.slice();
+  $("edited").hidden = true;
+  syncInputs();
+  predict();
+}
+
+function setValue(i, v) {
+  current[i] = v;
+  $("edited").hidden = false;
+  syncInputs();
+  clearTimeout(timer);
+  timer = setTimeout(predict, 120);
+}
+
+function syncInputs() {
+  DATA.features.forEach((_, i) => {
+    const s = $("s" + i), n = $("n" + i);
+    if (s) { s.value = current[i]; $("o" + i).textContent = fmt(current[i]); }
+    if (document.activeElement !== n) n.value = +current[i].toPrecision(6);
+  });
+}
+
+async function predict() {
+  const mine = ++seq;
+  $("status").className = "status";
+  $("status").textContent = "Asking the model…";
+  let out;
+  try {
+    const res = await fetch("/api/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ features: current }) });
+    out = await res.json();
+    if (!res.ok) throw new Error(out.error || "The model could not score these values.");
+  } catch (e) {
+    if (mine !== seq) return;
+    $("status").className = "status err";
+    $("status").textContent = (e.message || "The model did not respond.") + " Your values are kept; try again.";
+    return;
+  }
+  if (mine !== seq) return;
+  const edited = !$("edited").hidden;
+  const pct = out.probability * 100;
+  $("verdict").classList.toggle("mal", out.malignant);
+  $("meter").classList.toggle("mal", out.malignant);
+  $("word").textContent = label(out.malignant);
+  $("pct").textContent = `${pct < 0.1 ? "under 0.1" : pct > 99.9 ? "over 99.9" : pct.toFixed(1)}% probability of malignant`;
+  $("fill").style.width = Math.max(pct, 0.5) + "%";
+  $("tick").style.left = `calc(${out.threshold * 100}% - 1.5px)`;
+  $("tick").firstElementChild.textContent = "threshold " + out.threshold.toFixed(2);
+  $("default").textContent = label(out.malignant_at_default) + (out.malignant !== out.malignant_at_default ? " (the tuned threshold changes this)" : "");
+  if (edited) {
+    $("actual").textContent = "Unknown (hypothetical patient)";
+  } else {
+    const right = (base.actual === 1) === out.malignant;
+    $("actual").innerHTML = `${label(base.actual === 1)} <span class="badge ${right ? "ok" : "bad"}">${right ? "model is correct" : "model is wrong"}</span>`;
+  }
+  $("clusterline").textContent = `K-Means, which never saw a label, puts this patient in the ${out.cluster.name} group.`;
+  $("status").textContent = "";
+  lastPca = out.pca;
+  drawMap();
+}
+
+function drawMap() {
+  const W = 640, H = 400, pad = 34, pts = DATA.points;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  if (lastPca) { xs.push(lastPca[0]); ys.push(lastPca[1]); }
+  const x0 = Math.min(...xs) - 0.5, x1 = Math.max(...xs) + 0.5, y0 = Math.min(...ys) - 0.5, y1 = Math.max(...ys) + 0.5;
+  const sx = v => pad + (v - x0) / (x1 - x0) * (W - pad - 12), sy = v => H - pad - (v - y0) / (y1 - y0) * (H - pad - 12);
+  const col = p => (colourBy === "cluster" ? p[3] : p[2]) ? "#D1495B" : "#4C9F70";
+  let s = `<line x1="${pad}" y1="${H - pad}" x2="${W - 12}" y2="${H - pad}" stroke="#E3D9C8" stroke-width="1.5"/><line x1="${pad}" y1="12" x2="${pad}" y2="${H - pad}" stroke="#E3D9C8" stroke-width="1.5"/>`;
+  s += `<text x="${W / 2}" y="${H - 10}" text-anchor="middle" font-size="12" fill="#555B6E">PC1: overall size and irregularity</text>`;
+  s += `<text x="12" y="${H / 2}" text-anchor="middle" font-size="12" fill="#555B6E" transform="rotate(-90 12 ${H / 2})">PC2</text>`;
+  for (const p of pts) s += `<circle cx="${sx(p[0]).toFixed(1)}" cy="${sy(p[1]).toFixed(1)}" r="3" fill="${col(p)}" fill-opacity="0.55"/>`;
+  if (lastPca) {
+    const cx = sx(lastPca[0]).toFixed(1), cy = sy(lastPca[1]).toFixed(1);
+    s += `<circle cx="${cx}" cy="${cy}" r="13" fill="none" stroke="#12172B" stroke-opacity="0.25" stroke-width="6"/><circle cx="${cx}" cy="${cy}" r="8" fill="#fff" stroke="#12172B" stroke-width="3.5"/>`;
+  }
+  $("map").innerHTML = s;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -5,6 +5,11 @@ Machine Learning Lab small project. One medical dataset, two programs:
 1. **Supervised:** learn the diagnosis from labelled patients and test it on patients the model has never seen.
 2. **Unsupervised:** hide the labels and check whether the data splits into benign and malignant groups on its own.
 
+**Live demo:** https://breast-cancer-diagnosis-ml-lovat.vercel.app
+
+Pick one of the 114 test patients or move the measurements, and the page shows the SVM's prediction and the
+K-Means group for that patient. Test patients 17 and 19 are the two the model gets wrong.
+
 | | |
 |---|---|
 | **Supervised (tuned RBF-SVM)** | 98.2% accuracy, 97.6% recall, ROC-AUC 0.997, 1 of 42 cancers missed on the test set |
@@ -94,6 +99,27 @@ The diagnosis column is removed. Labels come back only at the end, to grade the 
 Clustering recovers most of the structure with no labels at all. Labels cut the error rate from 9.0% to 1.8%,
 and the gain is on the borderline tumours where the two groups overlap.
 
+## Web app
+
+The [`webapp/`](webapp) folder is a small site deployed on Vercel.
+
+- **Backend:** `api/predict.py` is a Python serverless function. `POST /api/predict` with `{"features": [30 numbers]}`
+  returns the malignant probability, the verdict at the tuned threshold, the K-Means cluster and the patient's
+  position on the first two principal components.
+- **No scikit-learn at runtime:** `export_model.py` writes the trained SVM (scaler, support vectors, coefficients,
+  probability calibration) and the PCA + K-Means parameters to `api/model.json`. The function redoes the maths in
+  plain Python, and the export script checks that it matches scikit-learn on every test patient (largest
+  difference about 1e-14).
+- **Frontend:** `index.html` is a single static page with no build step.
+
+Run it locally with only the Python standard library:
+
+```bash
+python webapp/dev_server.py
+```
+
+Then open http://localhost:8000. After retraining, refresh the exported model with `python webapp/export_model.py`.
+
 ## Repository layout
 
 ```
@@ -105,6 +131,7 @@ and the gain is on the borderline tumours where the two groups overlap.
 ├── figures/                        every plot as PNG
 ├── results/                        every results table as CSV
 ├── models/final_model.joblib       the final SVM and its threshold
+├── webapp/                         live demo: static page + Python prediction API
 ├── REPORT.md                       project report
 ├── VIVA_GUIDE.md                   what each member explains, with likely questions
 └── requirements.txt
